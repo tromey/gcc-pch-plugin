@@ -26,7 +26,8 @@ hash_writer::hash_writer (const char *plugin_name, const char *filename)
 
   register_callback (plugin_name, PLUGIN_FINISH_TYPE, exported_add, this);
   register_callback (plugin_name, PLUGIN_FINISH_DECL, exported_add, this);
-  register_callback (plugin_name, PLUGIN_FINISH_UNIT, exported_finish, this);
+  // Note that PLUGIN_FINISH_UNIT is not called with --syntax-only.
+  register_callback (plugin_name, PLUGIN_FINISH, exported_finish, this);
 }
 
 void
@@ -225,7 +226,7 @@ hash_writer::write_function_type (tree t)
 	  break;
 	}
       ++n_args;
-      get (TREE_VALUE (t));
+      get (TREE_VALUE (iter));
     }
 
   ssize_t ret_type = get (TREE_TYPE (t));
@@ -287,7 +288,7 @@ hash_writer::write_decl (tree t)
 ssize_t
 hash_writer::write (tree t)
 {
-  if (TYPE_QUALS (t))
+  if (TYPE_P (t) && TYPE_QUALS (t))
     return write_qualified_type (t);
 
   switch (TREE_CODE (t))
@@ -314,7 +315,11 @@ hash_writer::write (tree t)
     case TYPE_DECL:
       return write_decl (t);
 
+    case VOID_TYPE:
+      break;
+
     default:
+      fprintf (stderr, "[tree code %d]\n", int (TREE_CODE (t)));
       abort ();
     }
 }
@@ -383,6 +388,8 @@ hash_writer::emit (const char *data, size_t len)
   if (m_offset + len >= m_len)
     {
       m_len *= 2;
+      if (m_offset + len >= m_len)
+	m_len = m_offset + len;
       m_buffer = static_cast<char *> (xrealloc (m_buffer, m_len));
     }
 
