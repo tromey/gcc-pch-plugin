@@ -5,6 +5,16 @@
 #include "toplev.h"
 #include "plugin-version.h"
 
+#ifdef __GNUC__
+#pragma GCC visibility push(default)
+#endif
+int plugin_is_GPL_compatible;
+#ifdef __GNUC__
+#pragma GCC visibility pop
+#endif
+
+pch_plugin *pch_plugin::singleton;
+
 pch_plugin::pch_plugin(const char *plugin_name)
 {
   assert (singleton == nullptr);
