@@ -24,5 +24,5 @@ clean:
 HERE := $(shell pwd)
 
 check: $(PLUGIN)
-	LD_LIBRARY_PATH=$(I)/lib64 $(CC) -fplugin=$(HERE)/$(PLUGIN) -fplugin-arg-$(NAME)-output=test/OUTPUT --syntax-only test/simple-test.c
-	LD_LIBRARY_PATH=$(I)/lib64 $(CC) -fplugin=$(HERE)/$(PLUGIN) --syntax-only test/test-read.c
+	LD_LIBRARY_PATH=$(I)/lib64 $(CC) -fplugin=$(HERE)/$(PLUGIN) -fplugin-arg-$(NAME)-output=test/file.npch --syntax-only test/simple-test.c
+	LD_LIBRARY_PATH=$(I)/lib64 $(CC) -fplugin=$(HERE)/$(PLUGIN) -c test/test-read.c
