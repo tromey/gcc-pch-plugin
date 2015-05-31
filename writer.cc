@@ -152,7 +152,7 @@ hash_writer::write_pointer_type (tree t)
   ssize_t base = get (TREE_TYPE (t));
   ssize_t result = here ();
   emit ('p');
-  emit (base);
+  emit (base, true);
   return result;
 }
 
@@ -163,7 +163,7 @@ hash_writer::write_qualified_type (tree t)
   ssize_t result = here ();
   emit ('q');
   emit (static_cast<ssize_t> (TYPE_QUALS (t)));
-  emit (base);
+  emit (base, true);
   return result;
 }
 
@@ -187,7 +187,7 @@ hash_writer::write_array_type (tree t)
   emit ('[');
   ssize_t len = tree_to_shwi (TYPE_MAX_VALUE (TYPE_DOMAIN (t))) + 1;
   emit (len);
-  emit (element);
+  emit (element, true);
   return result;
 }
 
@@ -235,12 +235,12 @@ hash_writer::write_function_type (tree t)
   emit ('(');
   emit (n_args);
   emit (is_varargs);
-  emit (ret_type);
+  emit (ret_type, true);
   for (tree iter = TYPE_ARG_TYPES (t); iter; iter = TREE_CHAIN (iter))
     {
       if (iter == void_list_node)
 	break;
-      emit (get (TREE_VALUE (iter)));
+      emit (get (TREE_VALUE (iter)), true);
     }
 
   return result;
@@ -269,7 +269,7 @@ hash_writer::write_struct_or_union_type (tree t)
   for (tree iter = TYPE_FIELDS (t); iter; iter = TREE_CHAIN (iter))
     {
       emit (IDENTIFIER_POINTER (DECL_NAME (iter)));
-      emit (get (TREE_TYPE (iter)));
+      emit (get (TREE_TYPE (iter)), true);
     }
 
   return result;
@@ -285,7 +285,7 @@ hash_writer::write_decl (tree t)
   emit (TREE_CODE (t) == FUNCTION_DECL ? 'f'
 	 : (TREE_CODE (t) == VAR_DECL ? 'v' : 't'));
   emit (IDENTIFIER_POINTER (DECL_NAME (t)));
-  emit (type);
+  emit (type, true);
   return result;
 }
 
@@ -360,11 +360,11 @@ hash_writer::emit (const char *s)
 }
 
 void
-hash_writer::emit (ssize_t val)
+hash_writer::emit (ssize_t val, bool is_type)
 {
   char buf[4];
 
-  if (val < 0)
+  if (is_type && val < 0)
     {
       ssize_t h = here ();
       ssize_t index = -(val + 1);
