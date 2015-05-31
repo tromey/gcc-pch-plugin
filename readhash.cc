@@ -42,7 +42,7 @@ public:
 
   bool read_int (int *result)
   {
-    if (m_p + 4 >= m_end)
+    if (m_p + 3 >= m_end)
       return false;
     *result = 0;
     for (int i = 3; i >= 0; --i)
@@ -63,7 +63,7 @@ public:
 
   size_t get_offset () const
   {
-    return m_data - m_p;
+    return m_p - m_data;
   }
 
 private:
@@ -118,6 +118,7 @@ mapped_hash::init ()
   n_trees = m_length - cpool_offset + 1;
   // Memory overkill.
   trees = new tree[n_trees];
+  memset (trees, 0, n_trees * sizeof (tree));
   return true;
 }
 
