@@ -1,1 +1,1 @@
-extern void function (void);
+extern void some_function (void);
