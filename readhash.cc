@@ -374,6 +374,8 @@ mapped_hash::read_basic (pointer_iterator &iter, int idx)
       return read_struct_or_union_type (iter, idx, c == '{');
     case 'S':
       return read_symbol (iter);
+    case 'V':
+      return void_type_node;
     }
 
   return error_mark_node;

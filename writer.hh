@@ -44,6 +44,7 @@ private:
   ssize_t write_enum_type (tree);
   ssize_t write_function_type (tree);
   ssize_t write_struct_or_union_type (tree);
+  ssize_t write_void_type ();
   ssize_t write_decl (tree);
   ssize_t write (tree);
   ssize_t get (tree);

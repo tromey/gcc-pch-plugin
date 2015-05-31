@@ -286,6 +286,14 @@ hash_writer::write_decl (tree t)
 }
 
 ssize_t
+hash_writer::write_void_type ()
+{
+  ssize_t result = here ();
+  emit ('V');
+  return result;
+}
+
+ssize_t
 hash_writer::write (tree t)
 {
   if (TYPE_P (t) && TYPE_QUALS (t))
@@ -316,7 +324,7 @@ hash_writer::write (tree t)
       return write_decl (t);
 
     case VOID_TYPE:
-      break;
+      return write_void_type ();
 
     default:
       fprintf (stderr, "[tree code %d]\n", int (TREE_CODE (t)));
