@@ -115,6 +115,9 @@ mapped_hash::init ()
     }
 
   cpool_offset = iter.get_offset ();
+  n_trees = m_length - cpool_offset + 1;
+  // Memory overkill.
+  trees = new tree[n_trees];
   return true;
 }
 
