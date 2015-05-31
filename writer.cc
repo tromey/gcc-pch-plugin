@@ -219,7 +219,7 @@ hash_writer::write_function_type (tree t)
   ssize_t is_varargs = true;
   for (tree iter = TYPE_ARG_TYPES (t); iter; iter = TREE_CHAIN (iter))
     {
-      if (iter == void_type_node)
+      if (iter == void_list_node)
 	{
 	  assert (TREE_CHAIN (iter) == NULL_TREE);
 	  is_varargs = false;
@@ -233,11 +233,15 @@ hash_writer::write_function_type (tree t)
 
   ssize_t result = here ();
   emit ('(');
-  emit (ret_type);
   emit (n_args);
   emit (is_varargs);
+  emit (ret_type);
   for (tree iter = TYPE_ARG_TYPES (t); iter; iter = TREE_CHAIN (iter))
-    emit (get (TREE_VALUE (iter)));
+    {
+      if (iter == void_list_node)
+	break;
+      emit (get (TREE_VALUE (iter)));
+    }
 
   return result;
 }
