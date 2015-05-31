@@ -50,6 +50,7 @@ public:
 	*result <<= 8;
 	*result |= m_p[i] & 0xff;
       }
+    m_p += 4;
     return true;
   }
 
@@ -91,7 +92,10 @@ mapped_hash::init ()
 
   int version;
   if (!iter.read_int (&version) || version != 1)
-    return false;
+    {
+      fprintf (stderr, "[version fail]\n");
+      return false;
+    }
 
   for (int i = 0; i < 2; ++i)
     {
