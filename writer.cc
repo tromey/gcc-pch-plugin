@@ -5,7 +5,7 @@ hash_writer::patcher::patcher (hash_writer *writer, tree t)
 {
   m_writer->m_patchers.push_back (this);
 
-  int token = - (1 + m_writer->m_patchers.size());
+  int token = - m_writer->m_patchers.size();
   m_writer->objects[t] = token;
 }
 
@@ -185,7 +185,9 @@ hash_writer::write_array_type (tree t)
 
   ssize_t result = here ();
   emit ('[');
-  ssize_t len = tree_to_shwi (TYPE_MAX_VALUE (TYPE_DOMAIN (t))) + 1;
+  ssize_t len = -1;
+  if (TYPE_DOMAIN (t))
+    len = tree_to_shwi (TYPE_MAX_VALUE (TYPE_DOMAIN (t))) + 1;
   emit (len);
   emit (element, true);
   return result;
@@ -268,7 +270,10 @@ hash_writer::write_struct_or_union_type (tree t)
 
   for (tree iter = TYPE_FIELDS (t); iter; iter = TREE_CHAIN (iter))
     {
-      emit (IDENTIFIER_POINTER (DECL_NAME (iter)));
+      if (DECL_NAME (iter))
+	emit (IDENTIFIER_POINTER (DECL_NAME (iter)));
+      else
+	emit ("");
       emit (get (TREE_TYPE (iter)), true);
     }
 
@@ -367,7 +372,7 @@ hash_writer::emit (ssize_t val, bool is_type)
   if (is_type && val < 0)
     {
       ssize_t h = here ();
-      ssize_t index = -(val + 1);
+      ssize_t index = -val - 1;
       m_patchers[index]->note_patch (here ());
     }
 

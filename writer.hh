@@ -56,7 +56,7 @@ private:
 
   // FIXME - error handling.
   void emit (char);
-  void emit (ssize_t);
+  void emit (ssize_t, bool = false);
   void emit (const char *);
   void emit (const char *, size_t);
   void emit_at (size_t, ssize_t);
