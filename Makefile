@@ -1,5 +1,6 @@
 
-I = /home/tromey/gcc/install/
+# I = /home/tromey/gcc/install/
+I =
 CC = $(I)/bin/gcc
 CXX = $(I)/bin/g++
 
