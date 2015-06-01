@@ -309,8 +309,9 @@ mapped_hash::read_struct_or_union_type (pointer_iterator &iter, int type_index,
       if (field_type == error_mark_node)
 	return error_mark_node;
 
+      tree name = *field_name == '\0' ? NULL_TREE : get_identifier (field_name);
       tree decl = build_decl (BUILTINS_LOCATION /* FIXME */, FIELD_DECL,
-			      get_identifier (field_name), field_type);
+			      name, field_type);
       DECL_FIELD_CONTEXT (decl) = trees[type_index];
 
       DECL_CHAIN (decl) = TYPE_FIELDS (trees[type_index]);
