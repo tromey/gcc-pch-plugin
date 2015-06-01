@@ -62,9 +62,9 @@ declarations and writes them to the output file, using a simple
 serialization scheme.
 
 On the reading side, the plugin uses the "C binding oracle" that was
-added to GCC for use the GDB `compile` plugin.  This oracle is called
-whenever the C front end needs the definition of a symbol -- and the
-plugin looks in its database to see if a definition exists.
+added to GCC for use by the GDB `compile` plugin.  This oracle is
+called whenever the C front end needs the definition of a symbol --
+and the plugin looks in its database to see if a definition exists.
 
 The plugin is written to lazily instantiate symbols and types.  That
 is, if a symbol is not used in the current compilation, then the
