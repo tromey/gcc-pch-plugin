@@ -1,5 +1,5 @@
-This is an implementation of pre-compiled headers for GCC, written as
-a GCC plugin.
+This is an experimental implementation of pre-compiled headers for
+GCC, written as a GCC plugin.
 
 This approach is better than the approach that is supplied with GCC
 itself.  Multiple PCH files can be used at once, performance should be
@@ -82,8 +82,9 @@ where the plugin gets its performance improvement.
   good way to go would be to try to reuse parts of the LTO streamer.
 
 * Lesser-used C features aren't supported.  I didn't bother with VLAs,
-  or vectors, or complex numbers.  In fact the current code has a few
-  FIXMEs around even common features like bitfields.
+  or vectors, complex numbers, packed structures, or attributes.  In
+  fact the current code has a few FIXMEs around even common features
+  like bitfields.
 
 * C++.  The potential win from an improved PCH is bigger with C++ than
   with C.  Right now there isn't anything like the binding oracle for
