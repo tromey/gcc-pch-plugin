@@ -179,14 +179,19 @@ hash_writer::write_enum_type (tree t)
   for (tree iter = TYPE_VALUES (t); iter; iter = TREE_CHAIN (iter))
     ++n_csts;
 
+  ssize_t size = int_size_in_bytes (t);
+  if (!TYPE_UNSIGNED (t))
+    size = -size;
+
   emit ('e');
+  emit (size);
   emit (n_csts);
   for (tree iter = TYPE_VALUES (t); iter; iter = TREE_CHAIN (iter))
     {
       emit (IDENTIFIER_POINTER (TREE_PURPOSE (iter)));
-#if fixme
-      emit (fixme_value (TREE_VALUE (iter)));
-#endif
+
+      unsigned HOST_WIDE_INT uhwi = tree_to_uhwi (TREE_VALUE (iter));
+      emit ((const char *) &uhwi, sizeof (uhwi));
     }
 }
 

@@ -63,6 +63,15 @@ public:
     return *m_p++;
   }
 
+  bool read_uhwi (unsigned HOST_WIDE_INT *result)
+  {
+    if (m_p + sizeof (*result) - 1 >= m_end)
+      return false;
+    memcpy (result, m_p, sizeof (*result));
+    m_p += sizeof (*result);
+    return true;
+  }
+
   size_t get_offset () const
   {
     return m_p - m_data;
@@ -248,22 +257,29 @@ mapped_hash::read_qualified_type (pointer_iterator &iter)
 tree
 mapped_hash::read_enum_type (pointer_iterator &iter)
 {
-  int num_elements;
-  if (!iter.read_int (&num_elements))
+  int size, num_elements;
+  if (!iter.read_int (&size) || !iter.read_int (&num_elements))
     return error_mark_node;
+
+  bool is_unsigned = size > 0;
+  if (size < 0)
+    size = -size;
+
   tree result = make_node (ENUMERAL_TYPE);
-  // underlying type?
+  TYPE_PRECISION (result) = size;
+  TYPE_UNSIGNED (result) = is_unsigned;
+
   for (int i = 0; i < num_elements; ++i)
     {
       const char *name = iter.read_string ();
       if (name == nullptr)
 	return error_mark_node;
-      unsigned long value;
-#if fixme
-      if (!iter.read_ulong (&value))
-#endif
+
+      unsigned HOST_WIDE_INT value;
+      if (!iter.read_uhwi (&value))
 	return error_mark_node;
-      tree cst = build_int_cst (result, value);
+      tree cst = (is_unsigned ? build_int_cstu (result, value)
+		  : build_int_cst (result, value));
       tree decl = build_decl (BUILTINS_LOCATION /* FIXME */,
 			      CONST_DECL, get_identifier (name), result);
       DECL_INITIAL (decl) = cst;
