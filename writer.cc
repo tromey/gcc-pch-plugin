@@ -1,4 +1,5 @@
 #include "writer.hh"
+#include "version.hh"
 
 hash_writer::hash_writer (const char *plugin_name, const char *filename)
   : m_filename (filename)
@@ -75,7 +76,7 @@ hash_writer::finish ()
     return;
 
   FILE *out = fopen (m_filename.c_str (), "w");
-  do_fwrite (out, 1); // FIXME version
+  do_fwrite (out, PCH_PLUGIN_VERSION);
 
   for (int i = 0; i < 2; ++i)
     {

@@ -7,6 +7,7 @@
 #include <string.h>
 #include "stringpool.h"
 #include "tree.h"
+#include "version.hh"
 
 class pointer_iterator
 {
@@ -91,7 +92,7 @@ mapped_hash::init ()
   pointer_iterator iter (m_data, m_length);
 
   int version;
-  if (!iter.read_int (&version) || version != 1)
+  if (!iter.read_int (&version) || version != PCH_PLUGIN_VERSION)
     {
       fprintf (stderr, "[version fail]\n");
       return false;

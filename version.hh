@@ -1,0 +1,1 @@
+#define PCH_PLUGIN_VERSION 1
