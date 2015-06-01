@@ -4,6 +4,8 @@
 #include "c-family/c-pragma.h"
 #include "toplev.h"
 #include "plugin-version.h"
+#include <memory>
+#include "fclose_deleter.hh"
 
 #ifdef __GNUC__
 #pragma GCC visibility push(default)
@@ -63,23 +65,18 @@ size_t
 pch_plugin::read_file (const char *filename, char **data)
 {
   struct stat sbuf;
-  FILE *f = fopen (filename, "r");
-  if (f == NULL)
+  std::unique_ptr<FILE, fclose_deleter> f (fopen (filename, "r"));
+  if (!f)
     return 0;
-  if (fstat (fileno (f), &sbuf) < 0)
-    {
-      fclose (f);
-      return 0;
-    }
+  if (fstat (fileno (f.get ()), &sbuf) < 0)
+    return 0;
   *data = new char[sbuf.st_size];
-  if (fread (*data, 1, sbuf.st_size, f) != sbuf.st_size)
+  if (fread (*data, 1, sbuf.st_size, f.get ()) != sbuf.st_size)
     {
       delete[] *data;
-      fclose (f);
       return 0;
     }
 
-  fclose (f);
   return sbuf.st_size;
 }
 

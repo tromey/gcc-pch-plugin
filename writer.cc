@@ -1,5 +1,7 @@
 #include "writer.hh"
 #include "version.hh"
+#include <memory>
+#include "fclose_deleter.hh"
 
 hash_writer::hash_writer (const char *plugin_name, const char *filename)
   : m_filename (filename)
@@ -75,8 +77,8 @@ hash_writer::finish ()
   if (inputs.empty ())
     return;
 
-  FILE *out = fopen (m_filename.c_str (), "w");
-  do_fwrite (out, PCH_PLUGIN_VERSION);
+  std::unique_ptr<FILE, fclose_deleter> out (fopen (m_filename.c_str (), "w"));
+  do_fwrite (out.get (), PCH_PLUGIN_VERSION);
 
   for (int i = 0; i < 2; ++i)
     {
@@ -87,16 +89,15 @@ hash_writer::finish ()
 
 	  ssize_t pool_off = get (*iter);
 	  tree name = DECL_P (*iter) ? DECL_NAME (*iter) : TYPE_NAME (*iter);
-	  do_fwrite (out, IDENTIFIER_POINTER (name),
+	  do_fwrite (out.get (), IDENTIFIER_POINTER (name),
 		     IDENTIFIER_LENGTH (name) + 1);
-	  do_fwrite (out, pool_off);
+	  do_fwrite (out.get (), pool_off);
 	}
 
-      do_fwrite (out, "", 1);
+      do_fwrite (out.get (), "", 1);
     }
 
-  do_fwrite (out, m_buffer, m_offset);
-  fclose (out);
+  do_fwrite (out.get (), m_buffer, m_offset);
 }
 
 /* static */ void
