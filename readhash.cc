@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <string.h>
+#include <memory>
 #include "stringpool.h"
 #include "tree.h"
 #include "version.hh"
@@ -198,27 +199,22 @@ mapped_hash::read_function_type (pointer_iterator &iter)
   if (return_type == error_mark_node)
     return error_mark_node;
 
-  // FIXME scoped_mumble or so.
-  tree *argument_types = new tree[num_args];
+  std::unique_ptr<tree[]> argument_types (new tree[num_args]);
   for (int i = 0; i < num_args; ++i)
     {
       argument_types[i] = read_index_get_type (iter);
       if (argument_types[i] == error_mark_node)
-	{
-	  delete[] argument_types;
-	  return error_mark_node;
-	}
+	return error_mark_node;
     }
 
   tree result;
   if (is_varargs)
     result = build_varargs_function_type_array (return_type, num_args,
-						argument_types);
+						argument_types.get ());
   else
     result = build_function_type_array (return_type, num_args,
-					argument_types);
+					argument_types.get ());
 
-  delete[] argument_types;
   return result;
 }
 
