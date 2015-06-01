@@ -1,24 +1,5 @@
 #include "writer.hh"
 
-hash_writer::patcher::patcher (hash_writer *writer, tree t)
-  : m_writer (writer)
-{
-  m_writer->m_patchers.push_back (this);
-
-  int token = - m_writer->m_patchers.size();
-  m_writer->objects[t] = token;
-}
-
-hash_writer::patcher::~patcher ()
-{
-  assert (m_writer->m_patchers.back () == this);
-  m_writer->m_patchers.pop_back ();
-
-  ssize_t val = m_writer->here ();
-  for (auto iter = m_patches.begin (); iter != m_patches.end (); ++iter)
-    m_writer->emit_at (*iter, val);
-}
-
 hash_writer::hash_writer (const char *plugin_name, const char *filename)
   : m_filename (filename)
 {
@@ -125,82 +106,77 @@ hash_writer::exported_finish (void *, void *self)
   writer->finish ();
 }
 
-ssize_t
+void
 hash_writer::write_int_type (tree t)
 {
-  ssize_t result = here ();
   emit ('i');
   ssize_t size = int_size_in_bytes (t);
   if (!TYPE_UNSIGNED (t))
     size = -size;
   emit (size);
-  return result;
 }
 
-ssize_t
+void
 hash_writer::write_float_type (tree t)
 {
-  ssize_t result = here ();
   emit ('f');
   emit (static_cast<ssize_t> (int_size_in_bytes (t)));
-  return result;
 }
 
-ssize_t
+void
 hash_writer::write_pointer_type (tree t)
 {
-  ssize_t base = get (TREE_TYPE (t));
-  ssize_t result = here ();
   emit ('p');
-  emit (base, true);
-  return result;
+  ssize_t patch = here ();
+  emit (patch);
+
+  ssize_t base = get (TREE_TYPE (t));
+  emit_at (patch, base);
 }
 
-ssize_t
+void
 hash_writer::write_qualified_type (tree t)
 {
-  ssize_t base = get (build_qualified_type (t, 0));
-  ssize_t result = here ();
   emit ('q');
   emit (static_cast<ssize_t> (TYPE_QUALS (t)));
-  emit (base, true);
-  return result;
+  ssize_t patch = here ();
+  emit (patch);
+
+  ssize_t base = get (build_qualified_type (t, 0));
+  emit_at (patch, base);
 }
 
-ssize_t
+void
 hash_writer::write_bitfield_type (tree t)
 {
-  ssize_t result = here ();
   emit (':');
 #if fixme
   emit (FIXME);
 #endif
-  return result;
 }
 
-ssize_t
+void
 hash_writer::write_array_type (tree t)
 {
-  ssize_t element = get (TREE_TYPE (t));
-
-  ssize_t result = here ();
   emit ('[');
   ssize_t len = -1;
   if (TYPE_DOMAIN (t))
     len = tree_to_shwi (TYPE_MAX_VALUE (TYPE_DOMAIN (t))) + 1;
   emit (len);
-  emit (element, true);
-  return result;
+  ssize_t patch = here ();
+  emit (patch);
+
+  ssize_t element = get (TREE_TYPE (t));
+  emit_at (patch, element);
 }
 
-ssize_t
+void
 hash_writer::write_enum_type (tree t)
 {
   ssize_t n_csts = 0;
   for (tree iter = TYPE_VALUES (t); iter; iter = TREE_CHAIN (iter))
     ++n_csts;
 
-  ssize_t result = here ();
   emit ('e');
   emit (n_csts);
   for (tree iter = TYPE_VALUES (t); iter; iter = TREE_CHAIN (iter))
@@ -210,13 +186,11 @@ hash_writer::write_enum_type (tree t)
       emit (fixme_value (TREE_VALUE (iter)));
 #endif
     }
-  return result;
 }
 
-ssize_t
+void
 hash_writer::write_function_type (tree t)
 {
-  // Make sure all argument types have been emitted.
   ssize_t n_args = 0;
   ssize_t is_varargs = true;
   for (tree iter = TYPE_ARG_TYPES (t); iter; iter = TREE_CHAIN (iter))
@@ -228,81 +202,87 @@ hash_writer::write_function_type (tree t)
 	  break;
 	}
       ++n_args;
-      get (TREE_VALUE (iter));
     }
 
-  ssize_t ret_type = get (TREE_TYPE (t));
-
-  ssize_t result = here ();
   emit ('(');
   emit (n_args);
   emit (is_varargs);
-  emit (ret_type, true);
+  ssize_t patch = here ();
+  emit (patch);
   for (tree iter = TYPE_ARG_TYPES (t); iter; iter = TREE_CHAIN (iter))
     {
       if (iter == void_list_node)
 	break;
-      emit (get (TREE_VALUE (iter)), true);
+      emit (patch);
     }
 
-  return result;
+  ssize_t ret_type = get (TREE_TYPE (t));
+  emit_at (patch, ret_type);
+  patch += 4;			// FIXME should be done elsewhere
+
+  for (tree iter = TYPE_ARG_TYPES (t); iter; iter = TREE_CHAIN (iter))
+    {
+      if (iter == void_list_node)
+	break;
+      emit_at (patch, get (TREE_VALUE (iter)));
+      patch += 4;		// FIXME
+    }
 }
 
-ssize_t
+void
 hash_writer::write_struct_or_union_type (tree t)
 {
   ssize_t n_elts = 0;
+  for (tree iter = TYPE_FIELDS (t); iter; iter = TREE_CHAIN (iter))
+    {
+      assert (TREE_CODE (iter) == FIELD_DECL);
+      ++n_elts;
+    }
 
-  {
-    patcher hold_patcher (this, t);
-
-    for (tree iter = TYPE_FIELDS (t); iter; iter = TREE_CHAIN (iter))
-      {
-	assert (TREE_CODE (iter) == FIELD_DECL);
-	++n_elts;
-	get (TREE_TYPE (iter));
-      }
-  }
-
-  ssize_t result = here ();
   emit (TREE_CODE (t) == RECORD_TYPE ? '{' : '|');
   emit (n_elts);
 
+  ssize_t patch = here ();
   for (tree iter = TYPE_FIELDS (t); iter; iter = TREE_CHAIN (iter))
     {
       if (DECL_NAME (iter))
 	emit (IDENTIFIER_POINTER (DECL_NAME (iter)));
       else
 	emit ("");
-      emit (get (TREE_TYPE (iter)), true);
+      emit (patch);
     }
 
-  return result;
+  for (tree iter = TYPE_FIELDS (t); iter; iter = TREE_CHAIN (iter))
+    {
+      if (DECL_NAME (iter))
+	patch += IDENTIFIER_LENGTH (DECL_NAME (iter)) + 1;
+      else
+	++patch;
+      emit_at (patch, get (TREE_TYPE (iter)));
+    }
 }
 
-ssize_t
+void
 hash_writer::write_decl (tree t)
 {
-  ssize_t type = get (TREE_TYPE (t));
 
-  ssize_t result = here ();
   emit ('S');
   emit (TREE_CODE (t) == FUNCTION_DECL ? 'f'
 	 : (TREE_CODE (t) == VAR_DECL ? 'v' : 't'));
   emit (IDENTIFIER_POINTER (DECL_NAME (t)));
-  emit (type, true);
-  return result;
+  ssize_t patch = here ();
+  emit (patch);
+
+  emit_at (patch, get (TREE_TYPE (t)));
 }
 
-ssize_t
+void
 hash_writer::write_void_type ()
 {
-  ssize_t result = here ();
   emit ('V');
-  return result;
 }
 
-ssize_t
+void
 hash_writer::write (tree t)
 {
   if (TYPE_P (t) && TYPE_QUALS (t))
@@ -347,9 +327,9 @@ hash_writer::get (tree t)
   auto ptr = objects.find (t);
   if (ptr != objects.end ())
     return (*ptr).second;
-  ssize_t result = write (t);
-  objects[t] = result;
-  return result;
+  objects[t] = here ();
+  write (t);
+  return objects[t];
 }
 
 void
@@ -365,24 +345,11 @@ hash_writer::emit (const char *s)
 }
 
 void
-hash_writer::emit (ssize_t val, bool is_type)
+hash_writer::emit (ssize_t val)
 {
-  char buf[4];
-
-  if (is_type && val < 0)
-    {
-      ssize_t h = here ();
-      ssize_t index = -val - 1;
-      m_patchers[index]->note_patch (here ());
-    }
-
-  for (int i = 0; i < 4; ++i)
-    {
-      buf[i] = val & 0xff;
-      val >>= 8;
-    }
-
-  emit (buf, 4);
+  ensure (4);
+  emit_at (here (), val);
+  m_offset += 4;
 }
 
 void
@@ -402,6 +369,14 @@ hash_writer::emit_at (size_t offset, ssize_t val)
 void
 hash_writer::emit (const char *data, size_t len)
 {
+  ensure (len);
+  memcpy (m_buffer + m_offset, data, len);
+  m_offset += len;
+}
+
+void
+hash_writer::ensure (size_t len)
+{
   if (m_offset + len >= m_len)
     {
       m_len *= 2;
@@ -409,7 +384,4 @@ hash_writer::emit (const char *data, size_t len)
 	m_len = m_offset + len;
       m_buffer = static_cast<char *> (xrealloc (m_buffer, m_len));
     }
-
-  memcpy (m_buffer + m_offset, data, len);
-  m_offset += len;
 }
