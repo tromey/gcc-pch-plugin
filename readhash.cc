@@ -56,7 +56,7 @@ public:
 
   char read_char ()
   {
-    if (m_p + 1 >= m_end)
+    if (m_p >= m_end)
       return 0;
     return *m_p++;
   }
