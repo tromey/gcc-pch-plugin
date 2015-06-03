@@ -8,7 +8,9 @@ OBJECTS = writer.o pch_plugin.o readhash.o
 
 D := $(shell $(CC) -print-file-name=plugin)
 
-CXXFLAGS += -std=c++11 -I$(D)/include -fPIC -g
+# See https://bugzilla.redhat.com/show_bug.cgi?id=1227828
+# to understand the -W.
+CXXFLAGS += -std=c++11 -I$(D)/include -fPIC -g -Wno-literal-suffix
 
 NAME = libpchplugin
 PLUGIN = $(NAME).so
