@@ -17,10 +17,10 @@ hash_writer::hash_writer (const char *plugin_name, const char *filename)
 void
 hash_writer::mark ()
 {
-  for (auto iter = inputs.begin (); iter != inputs.end (); ++iter)
-    ggc_mark (*iter);
-  for (auto iter = objects.begin (); iter != objects.end (); ++iter)
-    ggc_mark ((*iter).first);
+  for (auto &iter : inputs)
+    ggc_mark (iter);
+  for (auto &iter : objects)
+    ggc_mark (iter.first);
 }
 
 /* static */ void
@@ -82,13 +82,13 @@ hash_writer::finish ()
 
   for (int i = 0; i < 2; ++i)
     {
-      for (auto iter = inputs.begin (); iter != inputs.end (); ++iter)
+      for (auto &iter : inputs)
 	{
-	  if (!(i == 0 ? DECL_P (*iter) : TYPE_P (*iter)))
+	  if (!(i == 0 ? DECL_P (iter) : TYPE_P (iter)))
 	    continue;
 
-	  ssize_t pool_off = get (*iter);
-	  tree name = DECL_P (*iter) ? DECL_NAME (*iter) : TYPE_NAME (*iter);
+	  ssize_t pool_off = get (iter);
+	  tree name = DECL_P (iter) ? DECL_NAME (iter) : TYPE_NAME (iter);
 	  do_fwrite (out.get (), IDENTIFIER_POINTER (name),
 		     IDENTIFIER_LENGTH (name) + 1);
 	  do_fwrite (out.get (), pool_off);

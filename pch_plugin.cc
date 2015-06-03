@@ -4,7 +4,6 @@
 #include "c-family/c-pragma.h"
 #include "toplev.h"
 #include "plugin-version.h"
-#include <memory>
 #include "fclose_deleter.hh"
 
 #ifdef __GNUC__
@@ -32,9 +31,9 @@ pch_plugin::binding_oracle (c_oracle_request kind, tree identifier)
 {
   const char *name = IDENTIFIER_POINTER (identifier);
 
-  for (auto iter = maps.begin (); iter != maps.end (); ++iter)
+  for (auto &iter : maps)
     {
-      tree result = (*iter)->find (kind, name);
+      tree result = iter->find (kind, name);
       if (result != NULL_TREE)
 	{
 	  if (kind == C_ORACLE_SYMBOL)
@@ -99,11 +98,10 @@ pch_plugin::pragma_import_pch ()
 	}
       else
 	{
-	  mapped_hash *hash = new mapped_hash ((const uint8_t *) data, len);
-	  if (!hash->init ())
-	    delete hash;
-	  else
-	    maps.push_back (hash);
+	  std::unique_ptr<mapped_hash> hash
+	    (new mapped_hash ((const uint8_t *) data, len));
+	  if (hash->init ())
+	    maps.push_back (std::move(hash));
 	}
     }
   else
@@ -128,8 +126,8 @@ pch_plugin::init_pragmas (void *, void *)
 void
 pch_plugin::mark ()
 {
-  for (auto iter = maps.begin (); iter != maps.end (); ++iter)
-    (*iter)->mark ();
+  for (auto &iter : maps)
+    iter->mark ();
 }
 
 /* static */ void

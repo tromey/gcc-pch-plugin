@@ -10,6 +10,7 @@
 #include "c-tree.h"
 #include <assert.h>
 #include <list>
+#include <memory>
 
 class cpp_reader;
 class mapped_hash;
@@ -41,7 +42,7 @@ private:
 
   static pch_plugin *singleton;
 
-  std::list<mapped_hash *> maps;
+  std::list<std::unique_ptr<mapped_hash>> maps;
 };
 
 #endif // NPCH_PCH_PLUGIN_HH
